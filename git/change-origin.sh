@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-
+# Script uses getopts for argument parsing.
+# Checks if a remote origin for current pwd exists.
+# If it doesn't exist then remote origin is added
+# If it exists then remote origin is changed to the one specified by args.
 
 usage()
 {
