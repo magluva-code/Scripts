@@ -7,3 +7,7 @@ nordvpn-best-server
 
 change-origin.sh
 > Adds or changes the git origin for current working directory.
+
+update-pacman-mirrors
+> Uses reflector to search for the 200 best servers and overwrites
+> /etc/pacman.d/mirrorlist if -o customfile is not specified.
