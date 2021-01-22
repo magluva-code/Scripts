@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+
+# Script for helping to perform system maintenance.
+
+################################################################################
+#    DECLARATIONS
+################################################################################
+
+LSB="/usr/bin/lsb_release"
+START=$(date)
+LOG_PREFIX=$(date +%d%m%y"-"%T)
+
+LOGFILE=$(touch "sysop_$LOG_PREFIX.log")
+################################################################################
+#    FUNCTIONS
+################################################################################
+
+usage()
+{
+  cat << EOF
+  usage: $0 options
+  ------------------------------------------------------------
+  TODO
+
+  OPTIONS:
+    TODO
+
+  ------------------------------------------------------------
+EOF
+}
+
+option_header()
+{
+  local hdr="$@"
+  cat << EOF
+***************************************************
+   $hdr
+***************************************************
+EOF
+}
+
+print_menu()
+{
+  local main_menu_hdr=$(header "Main Menu")
+  cat << EOF
+|=================================================="
+| Logfile created $START |
+|-------------------------------------------------|
+|   Main Menu                                     |
+|-------------------------------------------------|
+|   1) OS info                                    |
+|   2) Host and DNS info                          |
+|   3) Network info                               |
+|   4) Network overview                           |
+|=================================================|
+EOF
+}
+
+pause()
+{
+  local msg="$@"
+  if [[ -z $msg ]]; then
+    msg="Press [ENTER] to continue.."
+  fi
+  read -p "$msg" readEnterKey
+}
+
+os_info()
+{
+  option_header "OS INFO"
+  echo "Operating system : $(uname)"
+  [ -x $LSB ] && $LSB -a
+  pause
+}
+
+host_info()
+{
+  option_header "HOST INFO"
+  echo "Not implemented yet.."
+  pause
+}
+
+dns_info()
+{
+  option_header "DNS INFO"
+  echo "Not implemented yet.."
+  pause
+}
+
+network_info()
+{
+  option_header "NETWORK INFO"
+  echo "Not implemented yet.."
+  pause
+}
+
+read_input()
+{
+  local c
+  read -p "Choose operation: " c
+  case $c in
+    1)
+      os_info
+      ;;
+    2)
+      host_info
+      ;;
+    3)
+      dns_info
+      ;;
+    4)
+      network_info
+      ;;
+    5)
+      exit 0
+      ;;
+    *)
+  pause
+  esac
+}
+
+################################################################################
+#    MAIN
+################################################################################
+print_menu
+read_input
