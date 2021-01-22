@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # Script uses getopts for argument parsing.
 # Checks if a remote origin for current pwd exists.
 # If it doesn't exist then remote origin is added
@@ -78,7 +79,7 @@ else
   COMMAND="set-url"
 fi
 
-git remote $COMMAND origin $REPONAME
+git remote $COMMAND origin "$REPONAME"
 verbose ""
 git remote -v
 echo "============================================================"

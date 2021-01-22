@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+# This is a script that uses the reflector package to update pacmans
+# mirrorlist. You can also save the list to a specified file if you want
+# to look through it first.
+
+usage()
+{
+  cat << EOF
+  usage: $0 options
+  ------------------------------------------------------------
+  This script downloads the 200 fastest arch linux
+  mirrors and replaces etc/pacman.d/mirrorlist if
+  a custom output path is not provided.
+
+  OPTIONS:
+    -h      Show this message
+    -o      Output file path
+
+  ------------------------------------------------------------
+EOF
+}
+
+permissions()
+{
+  if [[ $UID != 0 ]]; then
+    echo ""
+    echo "You are trying to access $1:"
+    echo "Run as sudo: sudo $0 $*"
+    echo ""
+    exit 1
+  fi
+}
+
+while getopts ":o:h" OPTION; do
+  case $OPTION in
+    h)
+      usage
+      exit 1
+      ;;
+    o)
+      OUTPATH="$OPTARG"
+      ;;
+    ?)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$OUTPATH" ]]; then
+  FILE="/etc/pacman.d/mirrorlist"
+  permissions $FILE
+else
+  FILE=$OUTPATH
+fi
+
+reflector --latest 200 --protocol http --protocol https --sort rate --save "$FILE"
+
+echo "done."
+echo ""
