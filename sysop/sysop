@@ -52,7 +52,8 @@ print_menu()
 |   1) OS info                                    |
 |   2) Host and DNS info                          |
 |   3) Network info                               |
-|   4) Network overview                           |
+|   4) Package management                         |
+|   5) Quit                                       |
 |=================================================|
 EOF
 }
@@ -81,13 +82,6 @@ host_info()
   pause
 }
 
-dns_info()
-{
-  option_header "DNS INFO"
-  echo "Not implemented yet.."
-  pause
-}
-
 network_info()
 {
   option_header "NETWORK INFO"
@@ -95,7 +89,68 @@ network_info()
   pause
 }
 
-read_input()
+pkg_management()
+{
+  option_header "PACKAGE MANAGEMENT"
+  echo "|   1) Show orphan packages."
+  echo "|   2) Show foreign packages."
+  echo "|   3) Write orphan packages to file."
+  echo "|   4) Write foreign packages to file."
+  echo "***************************************************"
+  read_input_pkg_management
+
+}
+
+show_orph_pkgs()
+{
+  echo "$(pacman -Qtd)"
+}
+
+show_foreign_pkgs()
+{
+  echo "$(pacman -Qm)"
+  pause
+}
+
+write_orph_pkgs_to_file()
+{
+  local file_name="orphan_pkgs.txt"
+  echo "$(show_orph_pkgs)" > $file_name
+  echo "List written to file: $file_name"
+  pause
+}
+
+write_foreign_pkgs_to_file()
+{
+  local file_name="foreign_pkgs.txt"
+  echo "$(show_foreign_pkgs)" > $file_name
+  echo "List written to file: $file_name"
+  pause
+}
+
+read_input_pkg_management()
+{
+  local c
+  read -p "Choose operation" c
+  case $c in
+    1)
+      show_orph_pkgs
+      ;;
+    2)
+      show_foreign_pkgs
+      ;;
+    3)
+      write_orph_pkgs_to_file
+      ;;
+    4)
+      write_foreign_pkgs_to_file
+      ;;
+    *)
+    pause
+  esac
+}
+
+read_input_main()
 {
   local c
   read -p "Choose operation: " c
@@ -107,10 +162,10 @@ read_input()
       host_info
       ;;
     3)
-      dns_info
+      network_info
       ;;
     4)
-      network_info
+      pkg_management
       ;;
     5)
       exit 0
@@ -124,4 +179,4 @@ read_input()
 #    MAIN
 ################################################################################
 print_menu
-read_input
+read_input_main
