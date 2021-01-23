@@ -42,7 +42,7 @@ EOF
 
 print_menu()
 {
-  local main_menu_hdr=$(header "Main Menu")
+  local main_menu_hdr=$(option_header "Main Menu")
   cat << EOF
 |=================================================="
 | Logfile created $START |
@@ -65,6 +65,18 @@ pause()
     msg="Press [ENTER] to continue.."
   fi
   read -p "$msg" readEnterKey
+}
+
+cleanup()
+{
+  echo "$(clear)"
+  if [[ $1 -eq 0 ]]; then
+    print_menu
+    read_input_main
+  elif [[ $1 -eq 1 ]]; then
+    pkg_management
+    read_input_pkg_management
+  fi
 }
 
 os_info()
@@ -104,12 +116,15 @@ pkg_management()
 show_orph_pkgs()
 {
   echo "$(pacman -Qtd)"
+  pause
+  cleanup 1
 }
 
 show_foreign_pkgs()
 {
   echo "$(pacman -Qm)"
   pause
+  cleanup 1
 }
 
 write_orph_pkgs_to_file()
@@ -117,7 +132,8 @@ write_orph_pkgs_to_file()
   local file_name="orphan_pkgs.txt"
   echo "$(show_orph_pkgs)" > $file_name
   echo "List written to file: $file_name"
-  pause
+  echo "$(clear)"
+  cleanup 1
 }
 
 write_foreign_pkgs_to_file()
@@ -125,7 +141,8 @@ write_foreign_pkgs_to_file()
   local file_name="foreign_pkgs.txt"
   echo "$(show_foreign_pkgs)" > $file_name
   echo "List written to file: $file_name"
-  pause
+  echo "$(clear)"
+  cleanup 1
 }
 
 read_input_pkg_management()
@@ -144,6 +161,9 @@ read_input_pkg_management()
       ;;
     4)
       write_foreign_pkgs_to_file
+      ;;
+    5)
+      cleanup 0
       ;;
     *)
     pause
