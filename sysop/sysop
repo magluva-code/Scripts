@@ -10,12 +10,36 @@
 LSB="/usr/bin/lsb_release"
 START=$(date)
 LOG_PREFIX=$(date +%d%m%y"-"%T)
-
 LOGFILE=$(touch "sysop_$LOG_PREFIX.log")
+declare -A colors=( ["r"]="\e[31m" ["b"]="\e[34m" ["g"]="\e[32m" ["reset"]="\e[0m" )
+
 ################################################################################
 #    FUNCTIONS
 ################################################################################
+#    Reusable String Operators
+#*******************************************************************************
+# Echo -e an ANSI colored string. Can be passed to read -p or regular echo.
+colored_str()
+{
+  local var=$(echo -e "${colors[$2]}$1${colors[reset]}")
+  echo $var
+}
 
+# For quick custom text header creation.
+option_header()
+{
+  local hdr="$@"
+  cat << EOF
+***************************************************
+   $hdr
+***************************************************
+EOF
+}
+
+#*******************************************************************************
+#    Menu Functions
+#*******************************************************************************
+# For displaying a help menu on how to use the script.
 usage()
 {
   cat << EOF
@@ -30,22 +54,14 @@ usage()
 EOF
 }
 
-option_header()
-{
-  local hdr="$@"
-  cat << EOF
-***************************************************
-   $hdr
-***************************************************
-EOF
-}
-
+# For printing the main menu with options.
 print_menu()
 {
-  local main_menu_hdr=$(option_header "Main Menu")
+  local quitmn=$(colored_str "Quit" r)
+  local log_msg=$(colored_str "Logged: " g)
   cat << EOF
-|=================================================="
-| Logfile created $START |
+|=================================================|
+|  $log_msg$START        |
 |-------------------------------------------------|
 |   Main Menu                                     |
 |-------------------------------------------------|
@@ -53,22 +69,46 @@ print_menu()
 |   2) Host and DNS info                          |
 |   3) Network info                               |
 |   4) Package management                         |
-|   5) Quit                                       |
+|   5) $quitmn                                       |
 |=================================================|
 EOF
 }
 
+# For printing package management menu.
+pkg_management()
+{
+  local quitmn=$(colored_str "Back to Main Menu" b)
+  echo ""
+  option_header "PACKAGE MANAGEMENT"
+  echo "|   1) Show orphan packages."
+  echo "|   2) Show foreign packages."
+  echo "|   3) Write orphan packages to file."
+  echo "|   4) Write foreign packages to file."
+  echo "|   5) $quitmn"
+  echo "***************************************************"
+  read_input_pkg_management
+}
+
+#*******************************************************************************
+#    Event Handelers
+#*******************************************************************************
+# For pausing and waiting for input.
 pause()
 {
   local msg="$@"
   if [[ -z $msg ]]; then
-    msg="Press [ENTER] to continue.."
+    msg1=$(colored_str "Press " g)
+    msg2="[ENTER]"
+    msg3=$(colored_str " to continue.." g)
   fi
-  read -p "$msg" readEnterKey
+  echo "***************************************************"
+  read -p "$msg1$msg2$msg3" readEnterKey
 }
 
+# For cleaning up the terminal.
 cleanup()
 {
+  pause
   echo "$(clear)"
   if [[ $1 -eq 0 ]]; then
     print_menu
@@ -79,54 +119,155 @@ cleanup()
   fi
 }
 
+# For asking the user if sure about action.
+are_you_sure()
+{
+  local action=$1
+  local msg=""
+  if [[ -z "$msg" ]]; then
+    msg1=$(colored_str "Press " "$3")
+    msg2="[y]"
+    msg3=$(colored_str " to " "$3")
+    msg4=$(colored_str "$2" "$3")
+  fi
+    read -p "$msg1$msg2$msg3$msg4: " c
+    echo "$(clear)"
+    if [[ $c = "y" ]]; then
+      case $action in
+        0)
+          exit 0
+          ;;
+        1)
+          print_menu
+          read_input_main
+          ;;
+        2)
+          pkg_management
+          read_input_pkg_management
+          ;;
+      esac
+    else
+      case $action in
+        0)
+          print_menu
+          read_input_main
+          ;;
+        1)
+          pkg_management
+          read_input_pkg_management
+          ;;
+      esac
+    fi
+}
+
+#*******************************************************************************
+#    Read Input Functions
+#*******************************************************************************
+# For reading and handeling user input in main menu.
+read_input_main()
+{
+  local msg=$(colored_str "Choose operation: " g)
+  local c
+  read -p "$msg" c
+  #read -p "Choose operation: " c
+  case $c in
+    1)
+      os_info
+      pause
+      ;;
+    2)
+      host_info
+      pause
+      ;;
+    3)
+      network_info
+      pause
+      ;;
+    4)
+      pkg_management
+      pause
+      ;;
+    5)
+      are_you_sure 0 "quit program" "r"
+      ;;
+  esac
+}
+
+# For reading and handeling user input in package management menu.
+read_input_pkg_management()
+{
+  local c
+  local msg=$(colored_str "Choose operation: " g)
+  read -p "$msg" c
+  case $c in
+    1)
+      show_orph_pkgs
+      pause
+      ;;
+    2)
+      show_foreign_pkgs
+      pause
+      ;;
+    3)
+      write_orph_pkgs_to_file
+      pause
+      ;;
+    4)
+      write_foreign_pkgs_to_file
+      pause
+      ;;
+    5)
+      are_you_sure 1 "Go back to main menu " "b"
+      ;;
+  esac
+}
+
+#*******************************************************************************
+#    Operation Functions
+#*******************************************************************************
+# For displaying OS info.
 os_info()
 {
+  echo ""
   option_header "OS INFO"
   echo "Operating system : $(uname)"
   [ -x $LSB ] && $LSB -a
-  pause
+  cleanup 0
 }
 
+# For displaying Host and DNS info.
 host_info()
 {
+  echo ""
   option_header "HOST INFO"
   echo "Not implemented yet.."
-  pause
+  cleanup 0
 }
 
+# For displaying Network info.
 network_info()
 {
+  echo ""
   option_header "NETWORK INFO"
   echo "Not implemented yet.."
-  pause
+  cleanup 0
 }
 
-pkg_management()
-{
-  option_header "PACKAGE MANAGEMENT"
-  echo "|   1) Show orphan packages."
-  echo "|   2) Show foreign packages."
-  echo "|   3) Write orphan packages to file."
-  echo "|   4) Write foreign packages to file."
-  echo "***************************************************"
-  read_input_pkg_management
-
-}
-
+# For showing orphan packages in terminal.
 show_orph_pkgs()
 {
   echo "$(pacman -Qtd)"
-  pause
   cleanup 1
 }
 
+# For showing foreign packages in terminal.
 show_foreign_pkgs()
 {
   echo "$(pacman -Qm)"
-  pause
   cleanup 1
 }
 
+# For writing list of orphan packages alphabetically to orphan_pkgs.txt.
 write_orph_pkgs_to_file()
 {
   local file_name="orphan_pkgs.txt"
@@ -136,6 +277,7 @@ write_orph_pkgs_to_file()
   cleanup 1
 }
 
+# For writing list of foreign packages alphabetically to foreign_pkgs.txt.
 write_foreign_pkgs_to_file()
 {
   local file_name="foreign_pkgs.txt"
@@ -143,56 +285,6 @@ write_foreign_pkgs_to_file()
   echo "List written to file: $file_name"
   echo "$(clear)"
   cleanup 1
-}
-
-read_input_pkg_management()
-{
-  local c
-  read -p "Choose operation" c
-  case $c in
-    1)
-      show_orph_pkgs
-      ;;
-    2)
-      show_foreign_pkgs
-      ;;
-    3)
-      write_orph_pkgs_to_file
-      ;;
-    4)
-      write_foreign_pkgs_to_file
-      ;;
-    5)
-      cleanup 0
-      ;;
-    *)
-    pause
-  esac
-}
-
-read_input_main()
-{
-  local c
-  read -p "Choose operation: " c
-  case $c in
-    1)
-      os_info
-      ;;
-    2)
-      host_info
-      ;;
-    3)
-      network_info
-      ;;
-    4)
-      pkg_management
-      ;;
-    5)
-      exit 0
-      ;;
-    *)
-  pause
-  esac
 }
 
 ################################################################################
