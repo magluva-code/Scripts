@@ -9,8 +9,8 @@
 
 LSB="/usr/bin/lsb_release"
 START=$(date)
-LOG_PREFIX=$(date +%d%m%y"-"%T)
-LOGFILE=$(touch "sysop_$LOG_PREFIX.log")
+LOG_PREFIX=$(date +%d%m%y)
+LOGFILE="sysop_$LOG_PREFIX.log"
 declare -A colors=( ["r"]="\e[31m" ["b"]="\e[34m" ["g"]="\e[32m" ["reset"]="\e[0m" )
 
 ################################################################################
@@ -66,27 +66,67 @@ print_menu()
 |   Main Menu                                     |
 |-------------------------------------------------|
 |   1) OS info                                    |
-|   2) Host and DNS info                          |
-|   3) Network info                               |
-|   4) Package management                         |
-|   5) $quitmn                                       |
+|   2) Memory info                                |
+|   3) Disk info                                  |
+|   4) Host and DNS info                          |
+|   5) Network info                               |
+|   6) Process info                               |
+|                                                 |
+|   7) Package management                         |
+|   8) Network management                         |
+|   9) File management                            |
+|   10) User Management                           |
+|                                                 |
+|   q) $quitmn                                       |
 |=================================================|
 EOF
 }
 
 # For printing package management menu.
-pkg_management()
+pkg_management_menu()
 {
   local quitmn=$(colored_str "Back to Main Menu" b)
   echo ""
   option_header "PACKAGE MANAGEMENT"
-  echo "|   1) Show orphan packages."
-  echo "|   2) Show foreign packages."
-  echo "|   3) Write orphan packages to file."
-  echo "|   4) Write foreign packages to file."
-  echo "|   5) $quitmn"
+  echo "|   1) Show installed packages."
+  echo "|   2) Show orphan packages."
+  echo "|   3) Show foreign packages."
+  echo "|   4) Write installed packages to file."
+  echo "|   5) Write orphan packages to file."
+  echo "|   6) Write foreign packages to file."
+  echo "|   q) $quitmn"
   echo "***************************************************"
   read_input_pkg_management
+}
+
+# For printing network management menu.
+network_management_menu()
+{
+  local quitmn=$(colored_str "Back to Main Menu")
+  echo ""
+  option_header "NETWORK MANAGEMENT"
+  echo "|   Not implemented yet.."
+  echo "***************************************************"
+}
+
+# For printing file management menu.
+file_management_menu()
+{
+  local quitmn=$(colored_str "Back to Main Menu")
+  echo ""
+  option_header "FILE MANAGEMENT"
+  echo "|   Not implemented yet.."
+  echo "***************************************************"
+}
+
+# For printing user management menu.
+user_management_menu()
+{
+  local quitmn=$(colored_str "Back to Main Menu")
+  echo ""
+  option_header "USER MANAGEMENT"
+  echo "|   Not implemented yet.."
+  echo "***************************************************"
 }
 
 #*******************************************************************************
@@ -114,7 +154,7 @@ cleanup()
     print_menu
     read_input_main
   elif [[ $1 -eq 1 ]]; then
-    pkg_management
+    pkg_management_menu
     read_input_pkg_management
   fi
 }
@@ -135,6 +175,7 @@ are_you_sure()
     if [[ $c = "y" ]]; then
       case $action in
         0)
+          end_log
           exit 0
           ;;
         1)
@@ -142,7 +183,7 @@ are_you_sure()
           read_input_main
           ;;
         2)
-          pkg_management
+          pkg_management_menu
           read_input_pkg_management
           ;;
       esac
@@ -153,11 +194,48 @@ are_you_sure()
           read_input_main
           ;;
         1)
-          pkg_management
+          pkg_management_menu
           read_input_pkg_management
           ;;
       esac
     fi
+}
+
+log()
+{
+  local len_1=40
+  local len_2=$(expr length "$1")
+  local new_len="$(($len_1 - $len_2))"
+  if [[ -z $2 ]]; then
+    echo "$1" >> "$LOGFILE"
+  else
+    echo -n "$1" >> "$LOGFILE"
+    for i in $(seq $new_len); do
+      echo -n " " >> "$LOGFILE"
+    done
+  echo "$(date +%T)" >>$LOGFILE
+  fi
+}
+
+log_info()
+{
+  echo "$1" >> $LOGFILE
+}
+
+create_log()
+{
+  touch $LOGFILE
+  log "**************************************************"
+  log "   LOG"
+  log "**************************************************"
+  log "Action:                                  Time:"
+  log "--------------------------------------------------"
+  log "# start" t
+}
+
+end_log()
+{
+  log "# end" t
 }
 
 #*******************************************************************************
@@ -173,21 +251,35 @@ read_input_main()
   case $c in
     1)
       os_info
-      pause
+      log "os_info() printed to stdout" t
+      log "$(os_info)"
+      cleanup 0
       ;;
     2)
-      host_info
-      pause
+      memory_info
+      cleanup 0
       ;;
     3)
-      network_info
-      pause
+      disk_info
+      cleanup 0
       ;;
     4)
-      pkg_management
-      pause
+      host_info
+      cleanup 0
       ;;
     5)
+      network_info
+      cleanup 0
+      ;;
+    6)
+      process_info
+      cleanup 0
+      ;;
+    7)
+      pkg_management_menu
+      cleanup 0
+      ;;
+    q)
       are_you_sure 0 "quit program" "r"
       ;;
   esac
@@ -201,23 +293,71 @@ read_input_pkg_management()
   read -p "$msg" c
   case $c in
     1)
-      show_orph_pkgs
-      pause
+      local sip_msg="Keyword (press [ENTER] if none): "
+      read -p "$sip_msg" k
+      show_installed_pkgs $k
+      cleanup 1
       ;;
     2)
-      show_foreign_pkgs
-      pause
+      show_orph_pkgs
+      cleanup 1
       ;;
     3)
-      write_orph_pkgs_to_file
-      pause
+      show_foreign_pkgs
+      cleanup 1
       ;;
     4)
-      write_foreign_pkgs_to_file
-      pause
+      local wptf_msg="Keyword (press [ENTER] if none): "
+      read -p "$wptf_msg" k
+      write_pkgs_to_file $k
+      cleanup 1
       ;;
     5)
+      write_orph_pkgs_to_file
+      cleanup 1
+      ;;
+    6)
+      write_foreign_pkgs_to_file
+      cleanup 1
+      ;;
+    q)
       are_you_sure 1 "Go back to main menu " "b"
+      ;;
+  esac
+}
+
+read_input_network_management()
+{
+  local c
+  local msg=$(colored_str "Choose operation: " g)
+  read -p "$msg" c
+  case $c in
+    *)
+      echo "Not iplemented yet.."
+      ;;
+  esac
+}
+
+read_input_file_management()
+{
+  local c
+  local msg=$(colored_str "Choose operation: " g)
+  read -p "$msg" c
+  case $c in
+    *)
+      echo "Not iplemented yet.."
+      ;;
+  esac
+}
+
+read_input_user_management()
+{
+  local c
+  local msg=$(colored_str "Choose operation: " g)
+  read -p "$msg" c
+  case $c in
+    *)
+      echo "Not iplemented yet.."
       ;;
   esac
 }
@@ -232,7 +372,22 @@ os_info()
   option_header "OS INFO"
   echo "Operating system : $(uname)"
   [ -x $LSB ] && $LSB -a
-  cleanup 0
+}
+
+# For displaying memory usage info.
+memory_info()
+{
+  echo ""
+  option_header "MEMORY INFO"
+  echo "Not implemented yet.."
+}
+
+# For displaying disk usage info.
+disk_info()
+{
+  echo ""
+  option_header "DISK INFO"
+  echo "Not implemented yet.."
 }
 
 # For displaying Host and DNS info.
@@ -241,7 +396,6 @@ host_info()
   echo ""
   option_header "HOST INFO"
   echo "Not implemented yet.."
-  cleanup 0
 }
 
 # For displaying Network info.
@@ -250,45 +404,91 @@ network_info()
   echo ""
   option_header "NETWORK INFO"
   echo "Not implemented yet.."
-  cleanup 0
+}
+
+# For displaying process info.
+process_info()
+{
+
+    echo ""
+    option_header "PROCESS INFO"
+    echo "Not implemented yet.."
+}
+# For showing all installed packages or show | -keyword
+show_installed_pkgs()
+{
+  echo ""
+  if [[ -z $1 ]]; then
+    option_header "INSTALLED PACKAGES"
+    echo "$(pacman -Q)"
+  else
+    option_header "INSTALLED PACKAGES: $1"
+    echo "$(pacman -Q | grep $1)"
+  fi
 }
 
 # For showing orphan packages in terminal.
 show_orph_pkgs()
 {
-  echo "$(pacman -Qtd)"
-  cleanup 1
+  local orphans="$(pacman -Qtd)"
+  option_header "ORPHAN PACKAGES"
+  if [[ -z $orphans ]]; then
+    echo "No orphaned packages found.."
+  else
+    echo "$orphans"
+  fi
 }
 
 # For showing foreign packages in terminal.
 show_foreign_pkgs()
 {
-  echo "$(pacman -Qm)"
-  cleanup 1
+  local foreigners="$(pacman -Qm)"
+  option_header "FOREIGN PACKAGES"
+  if [[ -z $foreigners ]]; then
+    echo "No foreign packages found.."
+  else
+    echo "$foreigners"
+  fi
+}
+
+# For writing list of all packages alphabetically to pkgs.text or show | -keyword
+write_pkgs_to_file()
+{
+  if [[ -z $1 ]]; then
+    local file_name="pkgs.txt"
+    touch $file_name
+    echo "$(show_installed_pkgs)" > $file_name
+  else
+    local file_name="pkgs_$1.txt"
+    touch $file_name
+    echo "$(show_installed_pkgs $1)" > $file_name
+  fi
 }
 
 # For writing list of orphan packages alphabetically to orphan_pkgs.txt.
 write_orph_pkgs_to_file()
 {
   local file_name="orphan_pkgs.txt"
+  touch $file_name
   echo "$(show_orph_pkgs)" > $file_name
-  echo "List written to file: $file_name"
-  echo "$(clear)"
-  cleanup 1
 }
 
 # For writing list of foreign packages alphabetically to foreign_pkgs.txt.
 write_foreign_pkgs_to_file()
 {
   local file_name="foreign_pkgs.txt"
+  touch $file_name
   echo "$(show_foreign_pkgs)" > $file_name
-  echo "List written to file: $file_name"
-  echo "$(clear)"
-  cleanup 1
 }
+
+# TODO:
+# Network management options
+# File management options
+# User management options
 
 ################################################################################
 #    MAIN
 ################################################################################
+create_log
 print_menu
 read_input_main
